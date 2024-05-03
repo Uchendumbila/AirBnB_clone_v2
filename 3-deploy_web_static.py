@@ -4,7 +4,7 @@
     on my web servers, using deploy function
 """
 from fabric.api import *
-from fabric.operations import run, put, sudo, local
+from fabric.operations import local, put
 from datetime import datetime
 import os
 
@@ -14,7 +14,7 @@ created_path = None
 
 def do_pack():
     """
-        generates a .tgz archine from contents of web_static
+        generates a .tgz archive from contents of web_static
     """
     time = datetime.utcnow().strftime('%Y%m%d%H%M%S')
     file_name = "versions/web_static_{}.tgz".format(time)
@@ -23,7 +23,8 @@ def do_pack():
         local("tar --create --verbose -z --file={} ./web_static"
               .format(file_name))
         return file_name
-    except:
+    except Exception as e:
+        print("Error packing: ", e)
         return None
 
 
@@ -50,7 +51,32 @@ def do_deploy(archive_path):
         run("ln -sf {}/{} /data/web_static/current"
             .format(path, folder[0]))
         return True
-    except:
+    except Exception as e:
+        print("Error deploying: ", e)
+        return False
+
+
+def deploy_locally():
+    """
+        Deploy the archive locally
+    """
+    global created_path
+    if created_path is None:
+        # Copy my_index.html to web_static directory
+        local("cp my_index.html web_static/")
+        created_path = do_pack()
+        # Remove my_index.html from web_static directory
+        local("rm web_static/my_index.html")
+    if created_path is None:
+        return False
+    try:
+        folder = os.path.splitext(os.path.basename(created_path))[0]
+        local("mkdir -p /tmp/{}".format(folder))
+        local("tar -xzf {} -C /tmp/{}/".format(created_path, folder))
+        print("Deployment locally at: /tmp/{}/".format(folder))
+        return True
+    except Exception as e:
+        print("Error deploying locally: ", e)
         return False
 
 
@@ -58,9 +84,8 @@ def deploy():
     """
         deploy function that creates/distributes an archive
     """
-    global created_path
-    if created_path is None:
-        created_path = do_pack()
-    if created_path is None:
+    if deploy_locally():
+        return do_deploy(created_path)
+    else:
         return False
-    return do_deploy(created_path)
+
