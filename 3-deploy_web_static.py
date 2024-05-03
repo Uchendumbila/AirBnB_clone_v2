@@ -88,4 +88,3 @@ def deploy():
         return do_deploy(created_path)
     else:
         return False
-
