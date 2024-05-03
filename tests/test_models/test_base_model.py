@@ -79,22 +79,33 @@ class TestBaseModel(unittest.TestCase):
         self.assertEqual(inst.number, 89)
 
     def test_datetime_attributes(self):
-        """Test that two BaseModel instances have different datetime objects
-        and that upon creation have identical updated_at and created_at
-        value."""
-        tic = datetime.now()
-        inst1 = BaseModel()
-        toc = datetime.now()
-        self.assertTrue(tic <= inst1.created_at <= toc)
-        time.sleep(1e-4)
-        tic = datetime.now()
-        inst2 = BaseModel()
-        toc = datetime.now()
-        self.assertTrue(tic <= inst2.created_at <= toc)
-        self.assertEqual(inst1.created_at, inst1.updated_at)
-        self.assertEqual(inst2.created_at, inst2.updated_at)
-        self.assertNotEqual(inst1.created_at, inst2.created_at)
-        self.assertNotEqual(inst1.updated_at, inst2.updated_at)
+    """Test creation and modification timestamps of BaseModel instances"""
+    # Create two instances of BaseModel
+    inst1 = BaseModel()
+    inst2 = BaseModel()
+
+    # Verify that the creation timestamps are within a reasonable range
+    self.assertLessEqual(inst1.created_at, datetime.now())
+    self.assertLessEqual(inst2.created_at, datetime.now())
+
+    # Verify that the creation timestamps are not equal
+    self.assertNotEqual(inst1.created_at, inst2.created_at)
+
+    # Verify that the modification timestamps are initially equal to creation timestamps
+    self.assertEqual(inst1.created_at, inst1.updated_at)
+    self.assertEqual(inst2.created_at, inst2.updated_at)
+
+    # Perform some action that would update the instances
+    inst1.name = "Test1"
+    inst2.name = "Test2"
+
+    # Verify that the modification timestamps have been updated
+    self.assertGreater(inst1.updated_at, inst1.created_at)
+    self.assertGreater(inst2.updated_at, inst2.created_at)
+
+    # Verify that the modification timestamps are not equal
+    self.assertNotEqual(inst1.updated_at, inst2.updated_at)
+
 
     def test_uuid(self):
         """Test that id is a valid uuid"""
